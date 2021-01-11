@@ -15,7 +15,8 @@ import 'package:flutter/material.dart';
 //
 // CONSIDERATIONS:
 // - how to time ticks? have async timer and on each tick vibrate, click, and flash screen depending on selected items? (if no item selected, don't activate timer)
-// 
+//   - use Timer.periodic? (yeah looks like best option)
+// - lowest & highest tempo? -> 20-400?
 //
 // IMPROVEMENTS:
 // - initially tempo selector will be slider, but turn into 3d wheel later (wheel inside screen - sides are smaller and center is bigger, looks like wheel inside screen)
