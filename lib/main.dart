@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shmetronome/change_notifiers/metronome_options.dart';
+import 'package:shmetronome/pages/metronome_page.dart';
+import 'package:shmetronome/pages/settings_page.dart';
 
 // CHORE:
 // not really chore, just red because looks nice
@@ -20,7 +25,19 @@ import 'package:flutter/material.dart';
 //
 // IMPROVEMENTS:
 // - initially tempo selector will be slider, but turn into 3d wheel later (wheel inside screen - sides are smaller and center is bigger, looks like wheel inside screen)
-// - 
+// -
+
+// steps
+// - first get shared preferences (last tempo, settings like colors, etc)
+// - init BlocProvider with options -> MetronomeOptionsCubit
+// - create bottom nav with metronome screen as default
+// - setup metronome screen (bloc notifies changes in options, timers commit actions on each metronome click (vibrate, click, blink)), remember stack (buttons in front, blinking screen behind (will be rebuilt constantly))
+// INDIVIDUAL ACTION HANDLING (WHEN TO CLICK)
+// - blinking screen receives metronome options, and listens to tempo changes and whether enabled or not. Has individual timer whos bpm is determined by tempo
+// -------- vibration is in metronome button stack (in front of blinking screen), and listens to tempo change and whether enabled. Can be paired with click timer (if enabled -> vibrate and if cliick -> playSound)
+// - individual tempo boxes blink depending on beat number (box #), and here logic can include vibration and click if enabled, since boxes always blink
+// - boxes blink one after the other depending on current beat #
+// - beat # is modified in box blink timer
 
 void main() {
   runApp(MyApp());
@@ -33,103 +50,102 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.green[700],
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: initialSetup(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
+Widget initialSetup() {
+  return FutureBuilder<MetronomeOptionsNotifier>(
+    future: loadPrefs(),
+    builder:
+        (BuildContext _, AsyncSnapshot<MetronomeOptionsNotifier> snapshot) {
+      if (snapshot.hasData) {
+        return ChangeNotifierProvider.value(
+          value: snapshot.data,
+          child: BottomNavContainer(),
+        );
+      } else {
+        return Center(child: CircularProgressIndicator());
+      }
+    },
+  );
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+/// get metronome options from SharedPreferences
+Future<MetronomeOptionsNotifier> loadPrefs() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  return MetronomeOptionsNotifier(
+    tempo: prefs.getInt("tempo") ?? 100,
+    clickEnabled: prefs.getBool("clickEnabled") ?? true,
+    blinkEnabled: prefs.getBool("blinkEnabled") ?? false,
+    vibrationEnabled: prefs.getBool("vibrationEnabled") ?? false,
+  );
+}
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+class BottomNavContainer extends StatefulWidget {
+  @override
+  _BottomNavContainerState createState() {
+    return _BottomNavContainerState();
+  }
+}
+
+class _BottomNavContainerState extends State<BottomNavContainer> {
+  int _selectedPageIndex;
+  List<Widget> _pages;
+  List<BottomNavigationBarItem> _bottomNavItems;
+  PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _selectedPageIndex = 0;
+    _pages = [
+      MetronomePage(),
+      SettingsPage(),
+    ];
+    _bottomNavItems = [
+      BottomNavigationBarItem(
+        icon: Icon(Icons.timer),
+        label: "metronome",
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.settings),
+        label: "settings",
+      ),
+    ];
+
+    _pageController = PageController(initialPage: _selectedPageIndex);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    _pageController.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+      body: PageView(
+        controller: _pageController,
+        physics: NeverScrollableScrollPhysics(),
+        children: _pages,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: _bottomNavItems,
+        currentIndex: _selectedPageIndex,
+        onTap: (selectedPageIndex) {
+          setState(() {
+            _selectedPageIndex = selectedPageIndex;
+            _pageController.jumpToPage(selectedPageIndex);
+          });
+        },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
