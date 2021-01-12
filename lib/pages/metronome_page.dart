@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shmetronome/change_notifiers/metronome_options.dart';
+import 'package:shmetronome/constants/constants.dart';
 import 'package:shmetronome/widgets/tempo_bar.dart';
 import 'package:tuple/tuple.dart';
 
@@ -25,6 +26,7 @@ class _MetronomePageState extends State<MetronomePage> {
   }
 }
 
+/// figures out which TempoBox needs to light up
 class BeatTracker {
   /// [beatNum] is max number of beats
   BeatTracker({@required this.beatNum, this.indx = 0});
@@ -59,23 +61,27 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
   void initState() {
     super.initState();
 
-    // TODO: add time signature selector (left and right wheels) (number of boxes) -> replace all "4" time signatures with val at MetronomeOptions (get from SharedPreferences)
+    // TODo: add time signature selector (left and right wheels) (number of boxes) -> replace all "4" time signatures with val at MetronomeOptions (get from SharedPreferences)
+    // TODO: in other words -> add time signature to MetronomeOptionsNotifier (defualt is 4/4), and show changes in TempoBar
+    // when time signature selected, show alertDialog that allows selection (1 wheel on left, 1 on right, with slash (/) between them)   (0)_0)
     _tempoBarController = TempoBarController(numBoxes: 4);
     _beatTracker = BeatTracker(indx: 0, beatNum: 4);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext _) {
     return Selector<MetronomeOptionsNotifier, Tuple2<bool, int>>(
       selector: (BuildContext _, MetronomeOptionsNotifier obj) {
         return Tuple2(obj.playing, obj.tempoBPM);
       },
-      builder: (_, Tuple2<bool, int> obj, __) {
+      builder: (BuildContext context1, Tuple2<bool, int> obj, __) {
+        final bool playing = obj.item1;
+        final int tempo = obj.item2;
         _tempoTimer?.cancel();
-        if (obj.item1) {
+        if (playing) {
           // if playing selected, play
           _tempoTimer = Timer.periodic(
-            _durationFromBPM(obj.item2),
+            _durationFromBPM(tempo),
             (timer) {
               _tempoBarController.blinkAtIndex(_beatTracker.nextBeat());
             },
@@ -86,6 +92,61 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
           children: [
             /// here will go tempo bar, tempo indicator, time signature selector, indicator selector (click, vibrate, blink), play/pause, etc...
             TempoBar(controller: _tempoBarController),
+
+            // empty space for blink viewing
+            Expanded(flex: 2, child: Container()),
+
+            // play/pause buttons
+            Expanded(
+              flex: 2,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    /// [play / pause]
+                    child: Container(
+                      margin: EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[900], width: 1),
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(Dimens.smol_radius)),
+                      ),
+                      child: IconButton(
+                        splashColor: Colors.transparent,
+                        icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+                        color: Colors.black,
+                        onPressed: () {
+                          Provider.of<MetronomeOptionsNotifier>(
+                            context1,
+                            listen: false,
+                          ).playing = !playing;
+                        },
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    /// [tempo selector (TODO)]
+                    child: Container(
+                      margin: EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[900], width: 1),
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(Dimens.smol_radius)),
+                      ),
+                      child: IconButton(
+                        splashColor: Colors.transparent,
+                        icon: Icon(Icons.touch_app),
+                        color: Colors.black,
+                        onPressed: () {
+                          // modify tempo here
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
           ],
         );
       },

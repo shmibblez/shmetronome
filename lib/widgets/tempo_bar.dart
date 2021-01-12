@@ -160,7 +160,7 @@ class _TempoBoxState extends State<TempoBox>
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        margin: EdgeInsets.fromLTRB(5, 5, 5, 5),
+        margin: EdgeInsets.all(5),
         decoration: BoxDecoration(
           color: Colors.grey[700].withOpacity(_animController.value),
           border: Border.all(color: Colors.grey[900], width: 1),
