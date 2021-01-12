@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.green[700],
+        primarySwatch: Colors.green,
       ),
       home: initialSetup(),
     );
@@ -78,10 +78,11 @@ Widget initialSetup() {
 Future<MetronomeOptionsNotifier> loadPrefs() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   return MetronomeOptionsNotifier(
-    tempo: prefs.getInt("tempo") ?? 100,
+    tempoBPM: prefs.getInt("tempo") ?? 200,
     clickEnabled: prefs.getBool("clickEnabled") ?? true,
     blinkEnabled: prefs.getBool("blinkEnabled") ?? false,
     vibrationEnabled: prefs.getBool("vibrationEnabled") ?? false,
+    playing: prefs.getBool("vibrationEnabled") ?? true,
   );
 }
 

@@ -2,30 +2,34 @@ import 'package:flutter/material.dart';
 
 class MetronomeOptionsNotifier extends ChangeNotifier {
   MetronomeOptionsNotifier({
-    @required tempo,
+    @required tempoBPM,
     @required clickEnabled,
     @required vibrationEnabled,
     @required blinkEnabled,
+    @required playing,
   }) {
-    this._tempo = tempo;
+    this._tempoBPM = tempoBPM;
     this._clickEnabled = clickEnabled;
     this._vibrationEnabled = vibrationEnabled;
     this._blinkEnabled = blinkEnabled;
+    this._playing = playing;
   }
 
-  int _tempo;
+  int _tempoBPM;
   bool _clickEnabled;
   bool _vibrationEnabled;
   bool _blinkEnabled;
+  bool _playing;
 
-  get tempo => this._tempo;
+  get tempoBPM => this._tempoBPM;
   get clickEnabled => this._clickEnabled;
   get vibrationEnabled => this._vibrationEnabled;
   get blinkEnabled => this._blinkEnabled;
+  get playing => this._playing;
 
-  set tempo(int newTempo) {
-    if (newTempo != this._tempo) {
-      this._tempo = newTempo;
+  set tempoBPM(int newTempo) {
+    if (newTempo != this._tempoBPM) {
+      this._tempoBPM = newTempo;
       notifyListeners();
     }
   }
@@ -51,10 +55,17 @@ class MetronomeOptionsNotifier extends ChangeNotifier {
     }
   }
 
+  set playing(bool playing) {
+    if (playing != this._playing) {
+      this._playing = playing;
+      notifyListeners();
+    }
+  }
+
   @override
   operator ==(dynamic obj) {
     return obj is MetronomeOptionsNotifier &&
-        obj.tempo == this._tempo &&
+        obj.tempoBPM == this._tempoBPM &&
         obj.clickEnabled == this._clickEnabled &&
         obj.vibrationEnabled == this._vibrationEnabled &&
         obj.blinkEnabled == this._blinkEnabled;
@@ -62,6 +73,6 @@ class MetronomeOptionsNotifier extends ChangeNotifier {
 
   @override
   int get hashCode =>
-      "${this._tempo.hashCode}${this._clickEnabled.hashCode}${this._vibrationEnabled.hashCode}${this._blinkEnabled.hashCode}"
+      "${this._tempoBPM.hashCode}${this._clickEnabled.hashCode}${this._vibrationEnabled.hashCode}${this._blinkEnabled.hashCode}"
           .hashCode;
 }
