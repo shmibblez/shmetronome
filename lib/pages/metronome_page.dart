@@ -76,17 +76,19 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
       },
       builder: (BuildContext context1, Tuple2<bool, int> obj, __) {
         final bool playing = obj.item1;
-        final int tempo = obj.item2;
+        double tempo = obj.item2.toDouble();
         _tempoTimer?.cancel();
         if (playing) {
           // if playing selected, play
           _tempoTimer = Timer.periodic(
-            _durationFromBPM(tempo),
+            _durationFromBPM(tempo.truncate()),
             (timer) {
               _tempoBarController.blinkAtIndex(_beatTracker.nextBeat());
             },
           );
         }
+        debugPrint("rebuilt after tempo change");
+
         return Column(
           mainAxisSize: MainAxisSize.max,
           children: [
@@ -95,6 +97,38 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
 
             // empty space for blink viewing
             Expanded(flex: 2, child: Container()),
+
+            // tempo slider
+            Builder(
+              builder: (context2) {
+                return Expanded(
+                  child: Container(
+                    margin: EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[900], width: 1),
+                      borderRadius:
+                          BorderRadius.all(Radius.circular(Dimens.smol_radius)),
+                    ),
+                    child: Slider(
+                        // TODO: find way to move slider and only set tempo when finished sliding (now when tempo is changed rebuilds whole widget)
+                        // onChangeEnd: (newTempo) {
+                        //   Provider.of<MetronomeOptionsNotifier>(context1,
+                        //           listen: false)
+                        //       .tempoBPM = newTempo.truncate();
+                        // },
+                        min: 10,
+                        max: 300,
+                        divisions: 290,
+                        value: tempo,
+                        onChanged: (newTempo) {
+                          Provider.of<MetronomeOptionsNotifier>(context1,
+                                  listen: false)
+                              .tempoBPM = newTempo.truncate();
+                        }),
+                  ),
+                );
+              },
+            ),
 
             // play/pause buttons
             Expanded(
