@@ -111,7 +111,6 @@ class _TempoBoxState extends State<TempoBox>
   AnimationController _animController;
   bool forward;
   void Function() listener;
-
   void Function(AnimationStatus) statusListener;
 
   @override

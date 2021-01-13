@@ -4,7 +4,7 @@ class Constants {
 }
 
 class Dimens {
-  static const double smol_radius = 5;
+  static const double smol_radius = 10;
   static const double avrg_radius = 10;
   static const double masv_radius = 15;
 }

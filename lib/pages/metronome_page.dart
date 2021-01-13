@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shmetronome/change_notifiers/metronome_options.dart';
 import 'package:shmetronome/constants/constants.dart';
+import 'package:shmetronome/helpers/helpers.dart';
 import 'package:shmetronome/widgets/tempo_bar.dart';
 import 'package:tuple/tuple.dart';
+import 'package:vibration/vibration.dart';
 
 /// names are confusing so:
 /// - MetronomePage encompasses MetronomeScreen and BlinkBackground
@@ -20,9 +22,36 @@ class MetronomePage extends StatefulWidget {
 }
 
 class _MetronomePageState extends State<MetronomePage> {
+  Timer timer;
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [_MetronomeScreen()]);
+    return Stack(
+      children: [
+        Selector<MetronomeOptionsNotifier, Tuple3<bool, int, bool>>(
+          selector: (_, obj) =>
+              Tuple3(obj.playing, obj.tempoBPM, obj.blinkEnabled),
+          builder: (_, obj, __) {
+            _BlinkBackgroundController controller =
+                _BlinkBackgroundController();
+            timer?.cancel();
+            debugPrint(
+                "blink selector event received, playing: ${obj.item1}, blink enabled: ${obj.item3}");
+            if (obj.item1 && obj.item3) {
+              // if blink enabled
+              timer = Timer.periodic(
+                Helpers.durationFromBPM(obj.item2),
+                (_) {
+                  controller.blink();
+                  debugPrint("blink activated");
+                },
+              );
+            }
+            return _BlinkBackground(controller: controller);
+          },
+        ),
+        _MetronomeScreen(),
+      ],
+    );
   }
 }
 
@@ -70,26 +99,29 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
 
   @override
   Widget build(BuildContext _) {
-    return Selector<MetronomeOptionsNotifier,
-        Tuple5<bool, int, bool, bool, bool>>(
-      selector: (BuildContext _, MetronomeOptionsNotifier obj) {
-        return Tuple5(obj.playing, obj.tempoBPM, obj.clickEnabled,
-            obj.vibrationEnabled, obj.blinkEnabled);
-      },
-      builder:
-          (BuildContext context1, Tuple5<bool, int, bool, bool, bool> obj, __) {
-        final bool playing = obj.item1;
-        final double tempo = obj.item2.toDouble();
-        final bool clickEnabled = obj.item3;
-        final bool vibrationEnabled = obj.item4;
-        final bool blinkEnabled = obj.item5;
+    return Consumer<MetronomeOptionsNotifier>(
+      // selector: (BuildContext _, MetronomeOptionsNotifier obj) {
+      //   return Tuple6(
+      //     obj.playing,
+      //     obj.tempoBPM,
+      //     obj.clickEnabled,
+      //     obj.vibrationEnabled,
+      //     obj.blinkEnabled,
+      //     obj.soundID,
+      //   );
+      // },
+      builder: (BuildContext context1, obj, __) {
         _tempoTimer?.cancel();
-        if (playing) {
+        if (obj.playing) {
           // if playing selected, play
           _tempoTimer = Timer.periodic(
-            _durationFromBPM(tempo.truncate()),
+            Helpers.durationFromBPM(obj.tempoBPM.truncate()),
             (timer) {
               _tempoBarController.blinkAtIndex(_beatTracker.nextBeat());
+              if (obj.clickEnabled) {
+                obj.soundPool.play(obj.soundID);
+              }
+              if (obj.vibrationEnabled) {}
             },
           );
         }
@@ -104,20 +136,22 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
             // tempo indicator
             Expanded(
               child: Container(
-                  margin: EdgeInsets.only(top: 5, bottom: 5),
+                  alignment: Alignment.center,
+                  margin: EdgeInsets.all(5),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey[900], width: 1),
-                    // borderRadius: BorderRadius.only(
-                    //   topLeft: Radius.circular(Dimens.smol_radius),
-                    //   bottomLeft: Radius.circular(Dimens.smol_radius),
-                    // ),
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(Dimens.smol_radius),
+                    ),
                   ),
-                  child: Text(tempo.toString(), textAlign: TextAlign.center)),
+                  child: Text("tempo: ${obj.tempoBPM}",
+                      textAlign: TextAlign.center)),
             ),
 
             // empty space for blink viewing
             Expanded(flex: 2, child: Container()),
 
+            // tempo indicator options (click, vibrate, blink)
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,13 +167,15 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                         ),
                       ),
                       child: IconButton(
-                        icon: Icon(
-                            clickEnabled ? Icons.volume_up : Icons.volume_off),
-                        color: clickEnabled ? Colors.black : Colors.grey[400],
+                        icon: Icon(obj.clickEnabled
+                            ? Icons.volume_up
+                            : Icons.volume_off),
+                        color:
+                            obj.clickEnabled ? Colors.black : Colors.grey[400],
                         onPressed: () {
                           Provider.of<MetronomeOptionsNotifier>(context,
                                   listen: false)
-                              .clickEnabled = !clickEnabled;
+                              .clickEnabled = !obj.clickEnabled;
                         },
                       ),
                     ),
@@ -155,15 +191,18 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                         // ),
                       ),
                       child: IconButton(
-                        icon: Icon(vibrationEnabled
+                        icon: Icon(obj.vibrationEnabled
                             ? Icons.vibration
                             : Icons.not_interested),
-                        color:
-                            vibrationEnabled ? Colors.black : Colors.grey[400],
-                        onPressed: () {
-                          Provider.of<MetronomeOptionsNotifier>(context,
-                                  listen: false)
-                              .vibrationEnabled = !vibrationEnabled;
+                        color: obj.vibrationEnabled
+                            ? Colors.black
+                            : Colors.grey[400],
+                        onPressed: () async {
+                          if (obj.canVibrate) {
+                            Provider.of<MetronomeOptionsNotifier>(context,
+                                    listen: false)
+                                .vibrationEnabled = !obj.vibrationEnabled;
+                          }
                         },
                       ),
                     ),
@@ -179,14 +218,15 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                         ),
                       ),
                       child: IconButton(
-                        icon: Icon(blinkEnabled
+                        icon: Icon(obj.blinkEnabled
                             ? Icons.lightbulb
                             : Icons.lightbulb_outline),
-                        color: blinkEnabled ? Colors.black : Colors.grey[400],
+                        color:
+                            obj.blinkEnabled ? Colors.black : Colors.grey[400],
                         onPressed: () {
                           Provider.of<MetronomeOptionsNotifier>(context,
                                   listen: false)
-                              .blinkEnabled = !blinkEnabled;
+                              .blinkEnabled = !obj.blinkEnabled;
                         },
                       ),
                     ),
@@ -216,7 +256,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                         min: 10,
                         max: 300,
                         divisions: 290,
-                        value: tempo,
+                        value: obj.tempoBPM.toDouble(),
                         onChanged: (newTempo) {
                           Provider.of<MetronomeOptionsNotifier>(context1,
                                   listen: false)
@@ -245,13 +285,14 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       ),
                       child: IconButton(
                         splashColor: Colors.transparent,
-                        icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+                        icon:
+                            Icon(obj.playing ? Icons.pause : Icons.play_arrow),
                         color: Colors.black,
                         onPressed: () {
                           Provider.of<MetronomeOptionsNotifier>(
                             context1,
                             listen: false,
-                          ).playing = !playing;
+                          ).playing = !obj.playing;
                         },
                       ),
                     ),
@@ -283,34 +324,86 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
       },
     );
   }
-
-  Duration _durationFromBPM(int bpm) {
-    // num of microseconds in second / bpm
-    return Duration(microseconds: (60000000 / bpm).truncate());
-  }
 }
 
 ///
 /// blinking background below
 ///
+
+class _BlinkBackgroundController extends ChangeNotifier {
+  void blink() {
+    debugPrint("controller blink called");
+    notifyListeners();
+  }
+}
+
 class _BlinkBackground extends StatefulWidget {
+  _BlinkBackground({@required this.controller});
+
+  final _BlinkBackgroundController controller;
   @override
   State<StatefulWidget> createState() {
     return _BlinkBackgroundState();
   }
 }
 
+// doesnt need a controller since has it's own timer
 class _BlinkBackgroundState extends State<_BlinkBackground>
     with SingleTickerProviderStateMixin {
+  AnimationController _animController;
+  bool forward;
+  void Function() listener;
+  void Function(AnimationStatus) statusListener;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animController = AnimationController(
+      vsync: this,
+      lowerBound: 0,
+      upperBound: 1,
+      duration: Duration(milliseconds: Constants.animation_duration_ms_half),
+      value: 0,
+    )..stop();
+
+    forward = true;
+    listener = () {
+      setState(() {});
+    };
+    statusListener = (status) {
+      if (status == AnimationStatus.completed) {
+        _animController.reverse();
+      }
+      if (status == AnimationStatus.dismissed) {
+        _animController.stop();
+      }
+    };
+    // add listeners
+    _animController.addListener(listener);
+    _animController.addStatusListener(statusListener);
+
+    widget.controller.addListener(blink);
+  }
+
+  void blink() {
+    debugPrint("blink called");
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    _animController.dispose();
+    widget.controller.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Selector<MetronomeOptionsNotifier, Tuple2<int, bool>>(
-      selector: (_, obj) => Tuple2(obj.tempoBPM, obj.blinkEnabled),
-      builder: (_, obj, __) {
-        // adjust timer and tempo inside container -> how to animate blinking?
-        // TODO: animate like tempo_box, dont need controller here
-        return Container();
-      },
+    debugPrint("blink widget rebuilt");
+    return Container(
+      color: Colors.grey[700].withOpacity(_animController.value),
     );
   }
 }

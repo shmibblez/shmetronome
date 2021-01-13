@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shmetronome/change_notifiers/metronome_options.dart';
@@ -79,7 +80,11 @@ Widget initialSetup() {
 Future<MetronomeOptionsNotifier> loadPrefs() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  // Soundpool pool = Soundpool(streamType: StreamType.notification);
+  Soundpool pool = Soundpool(streamType: StreamType.notification);
+
+  int soundID = await rootBundle
+      .load("sounds/mouse_click.aac")
+      .then((soundData) => pool.load(soundData));
 
   return MetronomeOptionsNotifier(
     tempoBPM: prefs.getInt("tempo") ?? 200,
@@ -87,6 +92,8 @@ Future<MetronomeOptionsNotifier> loadPrefs() async {
     blinkEnabled: prefs.getBool("blinkEnabled") ?? false,
     vibrationEnabled: prefs.getBool("vibrationEnabled") ?? false,
     playing: prefs.getBool("vibrationEnabled") ?? true,
+    soundID: soundID,
+    soundPool: pool,
   );
 }
 
