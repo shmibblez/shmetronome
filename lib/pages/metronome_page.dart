@@ -70,13 +70,19 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
 
   @override
   Widget build(BuildContext _) {
-    return Selector<MetronomeOptionsNotifier, Tuple2<bool, int>>(
+    return Selector<MetronomeOptionsNotifier,
+        Tuple5<bool, int, bool, bool, bool>>(
       selector: (BuildContext _, MetronomeOptionsNotifier obj) {
-        return Tuple2(obj.playing, obj.tempoBPM);
+        return Tuple5(obj.playing, obj.tempoBPM, obj.clickEnabled,
+            obj.vibrationEnabled, obj.blinkEnabled);
       },
-      builder: (BuildContext context1, Tuple2<bool, int> obj, __) {
+      builder:
+          (BuildContext context1, Tuple5<bool, int, bool, bool, bool> obj, __) {
         final bool playing = obj.item1;
-        double tempo = obj.item2.toDouble();
+        final double tempo = obj.item2.toDouble();
+        final bool clickEnabled = obj.item3;
+        final bool vibrationEnabled = obj.item4;
+        final bool blinkEnabled = obj.item5;
         _tempoTimer?.cancel();
         if (playing) {
           // if playing selected, play
@@ -95,8 +101,99 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
             /// here will go tempo bar, tempo indicator, time signature selector, indicator selector (click, vibrate, blink), play/pause, etc...
             TempoBar(controller: _tempoBarController),
 
+            // tempo indicator
+            Expanded(
+              child: Container(
+                  margin: EdgeInsets.only(top: 5, bottom: 5),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[900], width: 1),
+                    // borderRadius: BorderRadius.only(
+                    //   topLeft: Radius.circular(Dimens.smol_radius),
+                    //   bottomLeft: Radius.circular(Dimens.smol_radius),
+                    // ),
+                  ),
+                  child: Text(tempo.toString(), textAlign: TextAlign.center)),
+            ),
+
             // empty space for blink viewing
             Expanded(flex: 2, child: Container()),
+
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.only(top: 5, bottom: 5, left: 5),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[900], width: 1),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(Dimens.smol_radius),
+                          bottomLeft: Radius.circular(Dimens.smol_radius),
+                        ),
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                            clickEnabled ? Icons.volume_up : Icons.volume_off),
+                        color: clickEnabled ? Colors.black : Colors.grey[400],
+                        onPressed: () {
+                          Provider.of<MetronomeOptionsNotifier>(context,
+                                  listen: false)
+                              .clickEnabled = !clickEnabled;
+                        },
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.only(top: 5, bottom: 5),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[900], width: 1),
+                        // borderRadius: BorderRadius.only(
+                        //   topLeft: Radius.circular(Dimens.smol_radius),
+                        //   bottomLeft: Radius.circular(Dimens.smol_radius),
+                        // ),
+                      ),
+                      child: IconButton(
+                        icon: Icon(vibrationEnabled
+                            ? Icons.vibration
+                            : Icons.not_interested),
+                        color:
+                            vibrationEnabled ? Colors.black : Colors.grey[400],
+                        onPressed: () {
+                          Provider.of<MetronomeOptionsNotifier>(context,
+                                  listen: false)
+                              .vibrationEnabled = !vibrationEnabled;
+                        },
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      margin: EdgeInsets.only(top: 5, bottom: 5),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[900], width: 1),
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(Dimens.smol_radius),
+                          bottomRight: Radius.circular(Dimens.smol_radius),
+                        ),
+                      ),
+                      child: IconButton(
+                        icon: Icon(blinkEnabled
+                            ? Icons.lightbulb
+                            : Icons.lightbulb_outline),
+                        color: blinkEnabled ? Colors.black : Colors.grey[400],
+                        onPressed: () {
+                          Provider.of<MetronomeOptionsNotifier>(context,
+                                  listen: false)
+                              .blinkEnabled = !blinkEnabled;
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             // tempo slider
             Builder(
@@ -132,7 +229,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
 
             // play/pause buttons
             Expanded(
-              flex: 2,
+              flex: 1,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,

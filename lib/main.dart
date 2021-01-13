@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shmetronome/change_notifiers/metronome_options.dart';
 import 'package:shmetronome/pages/metronome_page.dart';
 import 'package:shmetronome/pages/settings_page.dart';
+import 'package:soundpool/soundpool.dart';
 
 // CHORE:
 // not really chore, just red because looks nice
@@ -77,6 +78,9 @@ Widget initialSetup() {
 /// get metronome options from SharedPreferences
 Future<MetronomeOptionsNotifier> loadPrefs() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  // Soundpool pool = Soundpool(streamType: StreamType.notification);
+
   return MetronomeOptionsNotifier(
     tempoBPM: prefs.getInt("tempo") ?? 200,
     clickEnabled: prefs.getBool("clickEnabled") ?? true,

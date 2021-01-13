@@ -71,6 +71,7 @@ class _TempoBarState extends State<TempoBar> {
   Widget build(BuildContext context) {
     debugPrint("-----------------tempo box count: ${_boxes.length}");
     return Expanded(
+      flex: 2,
       child: Row(
         children: _boxes,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

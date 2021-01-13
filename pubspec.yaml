@@ -27,6 +27,7 @@ dependencies:
   flutter_hooks: ^0.15.0
   provider: ^4.3.2+3
   shared_preferences: ^0.5.12+4
+  soundpool: ^1.1.3
   tuple: ^1.0.3
 
 dev_dependencies:
@@ -68,3 +69,5 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+  assets:
+    - sounds/mouse_click.aac
