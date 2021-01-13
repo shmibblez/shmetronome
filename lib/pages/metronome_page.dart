@@ -118,7 +118,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                 obj.soundPool.play(obj.soundID);
               }
               if (obj.vibrationEnabled) {
-                // TODO: vibrate here
+                Vibration.vibrate(duration: 100);
               }
             },
           );
@@ -179,9 +179,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       ),
                     ),
                   ),
-                  Offstage(
-                    offstage: obj.canVibrate,
-                    child: Expanded(
+                  Expanded(
+                    child: Offstage(
+                      offstage: !obj.canVibrate,
                       child: Container(
                         margin: EdgeInsets.only(top: 5, bottom: 5),
                         decoration: BoxDecoration(
@@ -408,7 +408,7 @@ class _BlinkBackgroundState extends State<_BlinkBackground>
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.grey[700].withOpacity(_animController.value),
+      color: Colors.grey[900].withOpacity(_animController.value),
     );
   }
 }

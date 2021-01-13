@@ -87,15 +87,18 @@ Future<MetronomeOptionsNotifier> loadPrefs() async {
       .load("sounds/mouse_click.aac")
       .then((soundData) => pool.load(soundData));
 
+  bool canVibrate = await Vibration.hasVibrator();
+  debugPrint("can vibrate: $canVibrate");
+
   return MetronomeOptionsNotifier(
     tempoBPM: prefs.getInt("tempo") ?? 200,
     clickEnabled: prefs.getBool("clickEnabled") ?? true,
     blinkEnabled: prefs.getBool("blinkEnabled") ?? false,
     vibrationEnabled: prefs.getBool("vibrationEnabled") ?? false,
-    playing: prefs.getBool("vibrationEnabled") ?? true,
+    playing: prefs.getBool("vibrationEnabled") ?? false,
     soundID: soundID,
     soundPool: pool,
-    canVibrate: await Vibration.hasVibrator(),
+    canVibrate: canVibrate,
   );
 }
 
