@@ -25,24 +25,20 @@ class _MetronomePageState extends State<MetronomePage> {
   Timer timer;
   @override
   Widget build(BuildContext context) {
+    _BlinkBackgroundController controller = _BlinkBackgroundController();
     return Stack(
       children: [
         Selector<MetronomeOptionsNotifier, Tuple3<bool, int, bool>>(
           selector: (_, obj) =>
               Tuple3(obj.playing, obj.tempoBPM, obj.blinkEnabled),
           builder: (_, obj, __) {
-            _BlinkBackgroundController controller =
-                _BlinkBackgroundController();
             timer?.cancel();
-            debugPrint(
-                "blink selector event received, playing: ${obj.item1}, blink enabled: ${obj.item3}");
             if (obj.item1 && obj.item3) {
               // if blink enabled
               timer = Timer.periodic(
                 Helpers.durationFromBPM(obj.item2),
                 (_) {
                   controller.blink();
-                  debugPrint("blink activated");
                 },
               );
             }
@@ -121,11 +117,12 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
               if (obj.clickEnabled) {
                 obj.soundPool.play(obj.soundID);
               }
-              if (obj.vibrationEnabled) {}
+              if (obj.vibrationEnabled) {
+                // TODO: vibrate here
+              }
             },
           );
         }
-        debugPrint("rebuilt after tempo change");
 
         return Column(
           mainAxisSize: MainAxisSize.max,
@@ -139,12 +136,13 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                   alignment: Alignment.center,
                   margin: EdgeInsets.all(5),
                   decoration: BoxDecoration(
+                    color: Constants.buttonBackgroundColor,
                     border: Border.all(color: Colors.grey[900], width: 1),
                     borderRadius: BorderRadius.all(
                       Radius.circular(Dimens.smol_radius),
                     ),
                   ),
-                  child: Text("tempo: ${obj.tempoBPM}",
+                  child: Text("tempo: ${obj.tempoBPM} bpm",
                       textAlign: TextAlign.center)),
             ),
 
@@ -160,6 +158,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                     child: Container(
                       margin: EdgeInsets.only(top: 5, bottom: 5, left: 5),
                       decoration: BoxDecoration(
+                        color: Constants.buttonBackgroundColor,
                         border: Border.all(color: Colors.grey[900], width: 1),
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(Dimens.smol_radius),
@@ -180,37 +179,42 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Container(
-                      margin: EdgeInsets.only(top: 5, bottom: 5),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[900], width: 1),
-                        // borderRadius: BorderRadius.only(
-                        //   topLeft: Radius.circular(Dimens.smol_radius),
-                        //   bottomLeft: Radius.circular(Dimens.smol_radius),
-                        // ),
-                      ),
-                      child: IconButton(
-                        icon: Icon(obj.vibrationEnabled
-                            ? Icons.vibration
-                            : Icons.not_interested),
-                        color: obj.vibrationEnabled
-                            ? Colors.black
-                            : Colors.grey[400],
-                        onPressed: () async {
-                          if (obj.canVibrate) {
-                            Provider.of<MetronomeOptionsNotifier>(context,
-                                    listen: false)
-                                .vibrationEnabled = !obj.vibrationEnabled;
-                          }
-                        },
+                  Offstage(
+                    offstage: obj.canVibrate,
+                    child: Expanded(
+                      child: Container(
+                        margin: EdgeInsets.only(top: 5, bottom: 5),
+                        decoration: BoxDecoration(
+                          color: Constants.buttonBackgroundColor,
+                          border: Border.all(color: Colors.grey[900], width: 1),
+                          // borderRadius: BorderRadius.only(
+                          //   topLeft: Radius.circular(Dimens.smol_radius),
+                          //   bottomLeft: Radius.circular(Dimens.smol_radius),
+                          // ),
+                        ),
+                        child: IconButton(
+                          icon: Icon(obj.vibrationEnabled
+                              ? Icons.vibration
+                              : Icons.not_interested),
+                          color: obj.vibrationEnabled
+                              ? Colors.black
+                              : Colors.grey[400],
+                          onPressed: () async {
+                            if (obj.canVibrate) {
+                              Provider.of<MetronomeOptionsNotifier>(context,
+                                      listen: false)
+                                  .vibrationEnabled = !obj.vibrationEnabled;
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ),
                   Expanded(
                     child: Container(
-                      margin: EdgeInsets.only(top: 5, bottom: 5),
+                      margin: EdgeInsets.only(top: 5, right: 5, bottom: 5),
                       decoration: BoxDecoration(
+                        color: Constants.buttonBackgroundColor,
                         border: Border.all(color: Colors.grey[900], width: 1),
                         borderRadius: BorderRadius.only(
                           topRight: Radius.circular(Dimens.smol_radius),
@@ -242,6 +246,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                   child: Container(
                     margin: EdgeInsets.all(5),
                     decoration: BoxDecoration(
+                      color: Constants.buttonBackgroundColor,
                       border: Border.all(color: Colors.grey[900], width: 1),
                       borderRadius:
                           BorderRadius.all(Radius.circular(Dimens.smol_radius)),
@@ -279,6 +284,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                     child: Container(
                       margin: EdgeInsets.all(5),
                       decoration: BoxDecoration(
+                        color: Constants.buttonBackgroundColor,
                         border: Border.all(color: Colors.grey[900], width: 1),
                         borderRadius: BorderRadius.all(
                             Radius.circular(Dimens.smol_radius)),
@@ -302,6 +308,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                     child: Container(
                       margin: EdgeInsets.all(5),
                       decoration: BoxDecoration(
+                        color: Constants.buttonBackgroundColor,
                         border: Border.all(color: Colors.grey[900], width: 1),
                         borderRadius: BorderRadius.all(
                             Radius.circular(Dimens.smol_radius)),
@@ -362,7 +369,7 @@ class _BlinkBackgroundState extends State<_BlinkBackground>
     _animController = AnimationController(
       vsync: this,
       lowerBound: 0,
-      upperBound: 1,
+      upperBound: 0.5,
       duration: Duration(milliseconds: Constants.animation_duration_ms_half),
       value: 0,
     )..stop();
@@ -387,7 +394,6 @@ class _BlinkBackgroundState extends State<_BlinkBackground>
   }
 
   void blink() {
-    debugPrint("blink called");
     _animController.forward();
   }
 
@@ -401,7 +407,6 @@ class _BlinkBackgroundState extends State<_BlinkBackground>
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("blink widget rebuilt");
     return Container(
       color: Colors.grey[700].withOpacity(_animController.value),
     );

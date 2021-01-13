@@ -162,10 +162,12 @@ class _TempoBoxState extends State<TempoBox>
       child: Container(
         margin: EdgeInsets.all(5),
         decoration: BoxDecoration(
-          color: Colors.grey[700].withOpacity(_animController.value),
+          color: Constants.buttonBackgroundColor,
           border: Border.all(color: Colors.grey[900], width: 1),
           borderRadius: BorderRadius.all(Radius.circular(Dimens.smol_radius)),
         ),
+        child: Container(
+            color: Colors.grey[700].withOpacity(_animController.value)),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:shmetronome/change_notifiers/metronome_options.dart';
 import 'package:shmetronome/pages/metronome_page.dart';
 import 'package:shmetronome/pages/settings_page.dart';
 import 'package:soundpool/soundpool.dart';
+import 'package:vibration/vibration.dart';
 
 // CHORE:
 // not really chore, just red because looks nice
@@ -94,6 +95,7 @@ Future<MetronomeOptionsNotifier> loadPrefs() async {
     playing: prefs.getBool("vibrationEnabled") ?? true,
     soundID: soundID,
     soundPool: pool,
+    canVibrate: await Vibration.hasVibrator(),
   );
 }
 
