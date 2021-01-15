@@ -53,18 +53,18 @@ class _MetronomePageState extends State<MetronomePage> {
 
 /// figures out which TempoBox needs to light up
 class BeatTracker {
-  /// [beatNum] is max number of beats
-  BeatTracker({@required this.beatNum, this.indx = 0});
+  /// [numBeats] is max number of beats
+  BeatTracker({@required this.numBeats, this.indx = 0});
 
   int indx;
-  int beatNum;
+  int numBeats;
 
   /// returns current beat indx and moves to next one
   int nextBeat() {
     int currentBeat = indx;
 
     indx++;
-    if (indx >= beatNum) indx = 0;
+    if (indx >= numBeats) indx = 0;
 
     return currentBeat;
   }
@@ -85,12 +85,6 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    // TODo: add time signature selector (left and right wheels) (number of boxes) -> replace all "4" time signatures with val at MetronomeOptions (get from SharedPreferences)
-    // TODO: in other words -> add time signature to MetronomeOptionsNotifier (defualt is 4/4), and show changes in TempoBar
-    // when time signature selected, show alertDialog that allows selection (1 wheel on left, 1 on right, with slash (/) between them)   (0)_0)
-    _tempoBarController = TempoBarController(numBoxes: 4);
-    _beatTracker = BeatTracker(indx: 0, beatNum: 4);
   }
 
   @override
@@ -107,6 +101,13 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
       //   );
       // },
       builder: (BuildContext context1, obj, __) {
+        if (_tempoBarController == null) {
+          _tempoBarController = TempoBarController(numBoxes: 4);
+          _beatTracker = BeatTracker(indx: 0, numBeats: 4);
+        } else {
+          _tempoBarController.numBoxes = obj.timeSignature.top;
+          _beatTracker.numBeats = obj.timeSignature.top;
+        }
         _tempoTimer?.cancel();
         if (obj.playing) {
           // if playing selected, play
@@ -127,10 +128,10 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
         return Column(
           mainAxisSize: MainAxisSize.max,
           children: [
-            /// here will go tempo bar, tempo indicator, time signature selector, indicator selector (click, vibrate, blink), play/pause, etc...
+            /// here will go time signature selector, indicator selector (click, vibrate, blink), play/pause, etc...
             TempoBar(controller: _tempoBarController),
 
-            // tempo indicator
+            /// tempo indicator
             Expanded(
               child: Container(
                   alignment: Alignment.center,
@@ -146,10 +147,11 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       textAlign: TextAlign.center)),
             ),
 
-            // empty space for blink viewing
+            /// empty space for blink viewing
             Expanded(flex: 2, child: Container()),
 
-            // tempo indicator options (click, vibrate, blink)
+            /// tempo indicator options (click, vibrate, blink)
+            // click option
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -179,37 +181,39 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Offstage(
-                      offstage: !obj.canVibrate,
-                      child: Container(
-                        margin: EdgeInsets.only(top: 5, bottom: 5),
-                        decoration: BoxDecoration(
-                          color: Constants.buttonBackgroundColor,
-                          border: Border.all(color: Colors.grey[900], width: 1),
-                          // borderRadius: BorderRadius.only(
-                          //   topLeft: Radius.circular(Dimens.smol_radius),
-                          //   bottomLeft: Radius.circular(Dimens.smol_radius),
-                          // ),
-                        ),
-                        child: IconButton(
-                          icon: Icon(obj.vibrationEnabled
-                              ? Icons.vibration
-                              : Icons.not_interested),
-                          color: obj.vibrationEnabled
-                              ? Colors.black
-                              : Colors.grey[400],
-                          onPressed: () async {
-                            if (obj.canVibrate) {
-                              Provider.of<MetronomeOptionsNotifier>(context,
-                                      listen: false)
-                                  .vibrationEnabled = !obj.vibrationEnabled;
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
+                  // vibrate option
+                  obj.canVibrate
+                      ? Expanded(
+                          child: Container(
+                            margin: EdgeInsets.only(top: 5, bottom: 5),
+                            decoration: BoxDecoration(
+                              color: Constants.buttonBackgroundColor,
+                              border:
+                                  Border.all(color: Colors.grey[900], width: 1),
+                              // borderRadius: BorderRadius.only(
+                              //   topLeft: Radius.circular(Dimens.smol_radius),
+                              //   bottomLeft: Radius.circular(Dimens.smol_radius),
+                              // ),
+                            ),
+                            child: IconButton(
+                              icon: Icon(obj.vibrationEnabled
+                                  ? Icons.vibration
+                                  : Icons.not_interested),
+                              color: obj.vibrationEnabled
+                                  ? Colors.black
+                                  : Colors.grey[400],
+                              onPressed: () async {
+                                if (obj.canVibrate) {
+                                  Provider.of<MetronomeOptionsNotifier>(context,
+                                          listen: false)
+                                      .vibrationEnabled = !obj.vibrationEnabled;
+                                }
+                              },
+                            ),
+                          ),
+                        )
+                      : Container(),
+                  // blink option
                   Expanded(
                     child: Container(
                       margin: EdgeInsets.only(top: 5, right: 5, bottom: 5),
@@ -272,7 +276,8 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
               },
             ),
 
-            // play/pause buttons
+            /// play/pause, time signature, & tap to tempo options
+            /// [play/pause]
             Expanded(
               flex: 1,
               child: Row(
@@ -280,7 +285,6 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   Expanded(
-                    /// [play / pause]
                     child: Container(
                       margin: EdgeInsets.all(5),
                       decoration: BoxDecoration(
@@ -303,8 +307,100 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       ),
                     ),
                   ),
+
+                  /// [time signature]
                   Expanded(
-                    /// [tempo selector (TODO)]
+                    child: Container(
+                      margin: EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: Constants.buttonBackgroundColor,
+                        border: Border.all(color: Colors.grey[900], width: 1),
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(Dimens.smol_radius)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.keyboard_arrow_up),
+                                // if no more time signature top portions left, disable button
+                                onPressed: obj.timeSignature.onLastTop
+                                    ? null
+                                    : () {
+                                        debugPrint(
+                                            "increasing time signature top");
+                                        Provider.of<MetronomeOptionsNotifier>(
+                                                    context,
+                                                    listen: false)
+                                                .timeSignature =
+                                            TimeSignature(
+                                                top: obj.timeSignature.nextTop,
+                                                bot: obj.timeSignature.bot);
+                                      },
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                              ),
+                              Text(obj.timeSignature.top.toString()),
+                              IconButton(
+                                icon: Icon(Icons.keyboard_arrow_down),
+                                // if no more time signature top portions left, disable button
+                                onPressed: obj.timeSignature.onFirstTop
+                                    ? null
+                                    : () {
+                                        debugPrint(
+                                            "decreasing time signature top");
+                                        Provider.of<MetronomeOptionsNotifier>(
+                                                    context,
+                                                    listen: false)
+                                                .timeSignature =
+                                            TimeSignature(
+                                                top: obj.timeSignature.prevTop,
+                                                bot: obj.timeSignature.bot);
+                                        debugPrint(
+                                            " - old time sig top: ${obj.timeSignature.top}, new time sig top: ${obj.timeSignature.prevTop}");
+                                      },
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                          Text("/"),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment:
+                                MainAxisAlignment.center, // still need to do
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.keyboard_arrow_up),
+                                // if no more time signature top portions left, disable button
+                                onPressed: null,
+                                // (replace above null with) -> obj.timeSignature.onFirstTop ? null : () {},
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                              ),
+                              Text(obj.timeSignature.bot.toString()),
+                              IconButton(
+                                icon: Icon(Icons.keyboard_arrow_down),
+                                // if no more time signature top portions left, disable button
+                                onPressed: null,
+                                // (replace above null with) -> obj.timeSignature.onLastTop ? null : () {},
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                              ),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  /// [tap to tempo (TODO)]
+                  Expanded(
                     child: Container(
                       margin: EdgeInsets.all(5),
                       decoration: BoxDecoration(
@@ -334,12 +430,10 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
 }
 
 ///
-/// blinking background below
+/// blinking background widgets below
 ///
-
 class _BlinkBackgroundController extends ChangeNotifier {
   void blink() {
-    debugPrint("controller blink called");
     notifyListeners();
   }
 }

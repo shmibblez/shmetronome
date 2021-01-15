@@ -94,11 +94,17 @@ Future<MetronomeOptionsNotifier> loadPrefs() async {
     tempoBPM: prefs.getInt("tempo") ?? 200,
     clickEnabled: prefs.getBool("clickEnabled") ?? true,
     blinkEnabled: prefs.getBool("blinkEnabled") ?? false,
-    vibrationEnabled: prefs.getBool("vibrationEnabled") ?? false,
-    playing: prefs.getBool("vibrationEnabled") ?? false,
+    vibrationEnabled:
+        (prefs.getBool("vibrationEnabled") ?? false) && canVibrate,
+    playing: prefs.getBool("playing") ?? false,
     soundID: soundID,
     soundPool: pool,
     canVibrate: canVibrate,
+    timeSignature: TimeSignature(
+      top: prefs.getInt("timeSignatureTop") ?? 4,
+      bot: prefs.getInt("timeSignatureBot") ?? 4,
+      // TODO: make sure top between 1 - 32 && bot multiple of 2 & between 2 - 16
+    ),
   );
 }
 

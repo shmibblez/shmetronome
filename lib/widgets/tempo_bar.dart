@@ -69,7 +69,6 @@ class _TempoBarState extends State<TempoBar> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("-----------------tempo box count: ${_boxes.length}");
     return Expanded(
       flex: 2,
       child: Row(
@@ -82,7 +81,10 @@ class _TempoBarState extends State<TempoBar> {
   void _updateBoxes() {
     final List<TempoBox> boxes = [];
     for (int i = 0; i < widget.controller.numBoxes; i++) {
-      boxes.add(TempoBox(controller: TempoBoxController()));
+      boxes.add(TempoBox(
+          controller: i <= (_boxes?.length ?? 0) - 1
+              ? _boxes[i].controller
+              : TempoBoxController()));
     }
     _boxes = boxes;
     _numBoxes = boxes.length;
@@ -167,7 +169,12 @@ class _TempoBoxState extends State<TempoBox>
           borderRadius: BorderRadius.all(Radius.circular(Dimens.smol_radius)),
         ),
         child: Container(
-            color: Colors.grey[700].withOpacity(_animController.value)),
+          decoration: BoxDecoration(
+            color: Colors.grey[700].withOpacity(_animController.value),
+            borderRadius:
+                BorderRadius.all(Radius.circular(Dimens.smol_radius - 1)),
+          ),
+        ),
       ),
     );
   }
