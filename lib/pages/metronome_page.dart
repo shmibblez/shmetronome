@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shmetronome/change_notifiers/metronome_options.dart';
 import 'package:shmetronome/constants/constants.dart';
 import 'package:shmetronome/helpers/helpers.dart';
 import 'package:shmetronome/widgets/tempo_bar.dart';
-import 'package:tuple/tuple.dart';
 import 'package:vibration/vibration.dart';
 
 /// names are confusing so:
@@ -28,24 +28,11 @@ class _MetronomePageState extends State<MetronomePage> {
     _BlinkBackgroundController controller = _BlinkBackgroundController();
     return Stack(
       children: [
-        Selector<MetronomeOptionsNotifier, Tuple3<bool, int, bool>>(
-          selector: (_, obj) =>
-              Tuple3(obj.playing, obj.tempoBPM, obj.blinkEnabled),
-          builder: (_, obj, __) {
-            timer?.cancel();
-            if (obj.item1 && obj.item3) {
-              // if blink enabled
-              timer = Timer.periodic(
-                Helpers.durationFromBPM(obj.item2),
-                (_) {
-                  controller.blink();
-                },
-              );
-            }
-            return _BlinkBackground(controller: controller);
-          },
+        _BlinkBackground(controller: controller),
+        _MetronomeScreen(
+          blinkController: controller,
+          tempoDetector: TempoDetector(),
         ),
-        _MetronomeScreen(),
       ],
     );
   }
@@ -71,6 +58,13 @@ class BeatTracker {
 }
 
 class _MetronomeScreen extends StatefulWidget {
+  _MetronomeScreen({
+    @required this.blinkController,
+    @required this.tempoDetector,
+  });
+  final _BlinkBackgroundController blinkController;
+  final TempoDetector tempoDetector;
+
   @override
   State<StatefulWidget> createState() {
     return _MetronomeScreenState();
@@ -87,6 +81,36 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
     super.initState();
   }
 
+  void checkLegal() {
+    _checkLegal();
+  }
+
+  Future<void> _checkLegal() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await showDialog(
+      barrierDismissible: false,
+      context: this.context,
+      builder: (_) {
+        return AlertDialog(
+          content: Text(
+              "By using shmetronome, you acknowledge that you agree to our Terms and Conditions and Privacy Policy. Please actually read them, they're actually pretty short and contain some health warnings in case you suffer from conditions like epilepsy or something similar."),
+          actions: [
+            TextButton(
+              child: Text(
+                  "yes, I have read the Terms and Conditions and Privacy Policy and agree wholeheartedly"),
+              onPressed: () async {
+                await prefs.setBool("agreedToLegal", true);
+                Navigator.of(context).pop();
+                Provider.of<MetronomeOptionsNotifier>(context, listen: false)
+                    .agreedToLegal = true;
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext _) {
     return Consumer<MetronomeOptionsNotifier>(
@@ -101,9 +125,13 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
       //   );
       // },
       builder: (BuildContext context1, obj, __) {
+        if (!obj.agreedToLegal) {
+          checkLegal();
+        }
         if (_tempoBarController == null) {
-          _tempoBarController = TempoBarController(numBoxes: 4);
-          _beatTracker = BeatTracker(indx: 0, numBeats: 4);
+          _tempoBarController =
+              TempoBarController(numBoxes: obj.timeSignature.top);
+          _beatTracker = BeatTracker(indx: 0, numBeats: obj.timeSignature.bot);
         } else {
           _tempoBarController.numBoxes = obj.timeSignature.top;
           _beatTracker.numBeats = obj.timeSignature.top;
@@ -117,6 +145,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
               _tempoBarController.blinkAtIndex(_beatTracker.nextBeat());
               if (obj.clickEnabled) {
                 obj.soundPool.play(obj.soundID);
+              }
+              if (obj.blinkEnabled) {
+                widget.blinkController.blink();
               }
               if (obj.vibrationEnabled) {
                 Vibration.vibrate(duration: 100);
@@ -178,6 +209,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                                   listen: false)
                               .clickEnabled = !obj.clickEnabled;
                         },
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
                       ),
                     ),
                   ),
@@ -209,6 +243,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                                       .vibrationEnabled = !obj.vibrationEnabled;
                                 }
                               },
+                              splashColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              hoverColor: Colors.transparent,
                             ),
                           ),
                         )
@@ -236,6 +273,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                                   listen: false)
                               .blinkEnabled = !obj.blinkEnabled;
                         },
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
                       ),
                     ),
                   ),
@@ -255,22 +295,57 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       borderRadius:
                           BorderRadius.all(Radius.circular(Dimens.smol_radius)),
                     ),
-                    child: Slider(
-                        // TODO: find way to move slider and only set tempo when finished sliding (now when tempo is changed rebuilds whole widget)
-                        // onChangeEnd: (newTempo) {
-                        //   Provider.of<MetronomeOptionsNotifier>(context1,
-                        //           listen: false)
-                        //       .tempoBPM = newTempo.truncate();
-                        // },
-                        min: 10,
-                        max: 300,
-                        divisions: 290,
-                        value: obj.tempoBPM.toDouble(),
-                        onChanged: (newTempo) {
-                          Provider.of<MetronomeOptionsNotifier>(context1,
-                                  listen: false)
-                              .tempoBPM = newTempo.truncate();
-                        }),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.remove),
+                          // if no more time signature top portions left, disable button
+                          onPressed: () {
+                            Provider.of<MetronomeOptionsNotifier>(context,
+                                    listen: false)
+                                .decreaseTempoBy5();
+                          },
+                          padding: EdgeInsets.only(left: 25),
+                          constraints: BoxConstraints(),
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                        ),
+                        Expanded(
+                          child: Slider(
+                            // TODO: find way to move slider and only set tempo when finished sliding (now when tempo is changed rebuilds whole widget)
+                            // onChangeEnd: (newTempo) {
+                            //   Provider.of<MetronomeOptionsNotifier>(context1,
+                            //           listen: false)
+                            //       .tempoBPM = newTempo.truncate();
+                            // },
+                            min: Constants.minTempo.toDouble(),
+                            max: Constants.maxTempo.toDouble(),
+                            divisions: 290,
+                            value: obj.tempoBPM.toDouble(),
+                            onChanged: (newTempo) {
+                              Provider.of<MetronomeOptionsNotifier>(context1,
+                                      listen: false)
+                                  .tempoBPM = newTempo.truncate();
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.add),
+                          // if no more time signature top portions left, disable button
+                          onPressed: () {
+                            Provider.of<MetronomeOptionsNotifier>(context,
+                                    listen: false)
+                                .increaseTempoBy5();
+                          },
+                          padding: EdgeInsets.only(right: 25),
+                          constraints: BoxConstraints(),
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -294,16 +369,47 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                             Radius.circular(Dimens.smol_radius)),
                       ),
                       child: IconButton(
-                        splashColor: Colors.transparent,
                         icon:
                             Icon(obj.playing ? Icons.pause : Icons.play_arrow),
                         color: Colors.black,
                         onPressed: () {
-                          Provider.of<MetronomeOptionsNotifier>(
-                            context1,
-                            listen: false,
-                          ).playing = !obj.playing;
+                          if (obj.playing == false && obj.showEpilepsyWarning) {
+                            showDialog(
+                                barrierDismissible: false,
+                                context: context1,
+                                builder: (_) {
+                                  return AlertDialog(
+                                    content: Text(
+                                        """Warning: "rythmic stimulation" (repetitive sounds, vibration, or blinking) at certain frequencies may trigger seizures, if you suffer from any form of this or a similar condition do not use this app"""),
+                                    actions: [
+                                      TextButton(
+                                        child: Text("ok"),
+                                        onPressed: () async {
+                                          SharedPreferences prefs =
+                                              await SharedPreferences
+                                                  .getInstance();
+                                          await prefs.setBool(
+                                              "showEpilepsyWarning", false);
+                                          Navigator.of(context).pop();
+                                          Provider.of<MetronomeOptionsNotifier>(
+                                                  context,
+                                                  listen: false)
+                                              .showEpilepsyWarning = false;
+                                        },
+                                      )
+                                    ],
+                                  );
+                                });
+                          } else {
+                            Provider.of<MetronomeOptionsNotifier>(
+                              context1,
+                              listen: false,
+                            ).playing = !obj.playing;
+                          }
                         },
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
                       ),
                     ),
                   ),
@@ -344,6 +450,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                                       },
                                 padding: EdgeInsets.zero,
                                 constraints: BoxConstraints(),
+                                splashColor: Colors.transparent,
+                                highlightColor: Colors.transparent,
+                                hoverColor: Colors.transparent,
                               ),
                               Text(obj.timeSignature.top.toString()),
                               IconButton(
@@ -366,6 +475,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                                       },
                                 padding: EdgeInsets.zero,
                                 constraints: BoxConstraints(),
+                                splashColor: Colors.transparent,
+                                highlightColor: Colors.transparent,
+                                hoverColor: Colors.transparent,
                               ),
                             ],
                           ),
@@ -382,6 +494,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                                 // (replace above null with) -> obj.timeSignature.onFirstTop ? null : () {},
                                 padding: EdgeInsets.zero,
                                 constraints: BoxConstraints(),
+                                splashColor: Colors.transparent,
+                                highlightColor: Colors.transparent,
+                                hoverColor: Colors.transparent,
                               ),
                               Text(obj.timeSignature.bot.toString()),
                               IconButton(
@@ -391,6 +506,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                                 // (replace above null with) -> obj.timeSignature.onLastTop ? null : () {},
                                 padding: EdgeInsets.zero,
                                 constraints: BoxConstraints(),
+                                splashColor: Colors.transparent,
+                                highlightColor: Colors.transparent,
+                                hoverColor: Colors.transparent,
                               ),
                             ],
                           )
@@ -410,12 +528,20 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                             Radius.circular(Dimens.smol_radius)),
                       ),
                       child: IconButton(
-                        splashColor: Colors.transparent,
                         icon: Icon(Icons.touch_app),
                         color: Colors.black,
                         onPressed: () {
                           // modify tempo here
+                          int newTempo = widget.tempoDetector.newTouch();
+                          if (newTempo != null) {
+                            Provider.of<MetronomeOptionsNotifier>(context,
+                                    listen: false)
+                                .tempoBPM = newTempo;
+                          }
                         },
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
                       ),
                     ),
                   ),
@@ -488,6 +614,7 @@ class _BlinkBackgroundState extends State<_BlinkBackground>
   }
 
   void blink() {
+    _animController.reset();
     _animController.forward();
   }
 

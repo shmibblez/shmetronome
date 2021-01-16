@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shmetronome/constants/constants.dart';
 import 'package:soundpool/soundpool.dart';
 
 class MetronomeOptionsNotifier extends ChangeNotifier {
@@ -12,6 +13,8 @@ class MetronomeOptionsNotifier extends ChangeNotifier {
     @required Soundpool soundPool,
     @required this.canVibrate,
     @required TimeSignature timeSignature,
+    @required this.showEpilepsyWarning,
+    @required this.agreedToLegal,
   }) {
     this._tempoBPM = tempoBPM;
     this._clickEnabled = clickEnabled;
@@ -32,6 +35,8 @@ class MetronomeOptionsNotifier extends ChangeNotifier {
   Soundpool _soundPool;
   final bool canVibrate;
   TimeSignature _timeSignature;
+  bool showEpilepsyWarning;
+  bool agreedToLegal;
 
   int get tempoBPM => this._tempoBPM;
   bool get clickEnabled => this._clickEnabled;
@@ -96,6 +101,34 @@ class MetronomeOptionsNotifier extends ChangeNotifier {
     debugPrint(
         "hash codes: this ${this.timeSignature.hashCode}, obj ${newTimeSig.hashCode}");
     debugPrint("tops: this ${this.timeSignature.top}, obj ${newTimeSig.top}");
+  }
+
+  void increaseTempoBy5() {
+    int newTempo = this.tempoBPM + 5;
+    if (newTempo % 5 != 0) {
+      newTempo = (newTempo / 5).floor() * 5;
+    }
+    if (newTempo > Constants.maxTempo) {
+      newTempo = Constants.maxTempo;
+    }
+    if (newTempo != this.tempoBPM) {
+      this.tempoBPM = newTempo;
+      notifyListeners();
+    }
+  }
+
+  void decreaseTempoBy5() {
+    int newTempo = this.tempoBPM - 5;
+    if (newTempo % 5 != 0) {
+      newTempo = (newTempo / 5).ceil() * 5;
+    }
+    if (newTempo < Constants.minTempo) {
+      newTempo = Constants.minTempo;
+    }
+    if (newTempo != this.tempoBPM) {
+      this.tempoBPM = newTempo;
+      notifyListeners();
+    }
   }
 
   @override
@@ -190,4 +223,50 @@ class TimeSignature {
 
   @override
   int get hashCode => "${this._top}${this._bot}".hashCode;
+}
+
+/// receives touch events and calculates tempo from them
+class TempoDetector {
+  TempoDetector();
+
+// window to stop listening
+  static const _windowMicros = 5000000;
+
+  int lastMicros = 0;
+  double calculatedBPM;
+  int avgBias;
+
+  /// returns [calculated tempo], which is null if no previous touch event received
+  int newTouch() {
+    // if too many micros, reset calculated tempo and lastMicros (set to null)
+    int newMicros = DateTime.now().microsecondsSinceEpoch;
+    int diff = newMicros - this.lastMicros;
+
+    this.lastMicros = newMicros;
+
+    if (diff > _windowMicros) {
+      // reset stuff
+      this.calculatedBPM = null;
+      this.avgBias = 0;
+      return null;
+    }
+
+    double newBPM = _bpmFromMicros(diff);
+    // increment bias since adding new num
+    this.avgBias += 1;
+
+    this.calculatedBPM =
+        (((this.avgBias - 1) * (this.calculatedBPM ?? 0)) + newBPM) / avgBias;
+
+    debugPrint("calculated bpm: ${this.calculatedBPM}, diff: $diff");
+
+    return Constants.tempoWithinBounds(this.calculatedBPM.toInt());
+
+    // calculated tempo is average of received times (get diff between current time, last time, and add to avg)
+    // avg bias -> # times avg calculated (multiply calculatedTempo by this, add new tempo, and divide by avgBias + 1)
+  }
+
+  double _bpmFromMicros(int micros) {
+    return 60000000 / micros;
+  }
 }

@@ -1,3 +1,6 @@
+import 'dart:js';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -55,14 +58,14 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: initialSetup(),
+      home: initialSetup(context),
     );
   }
 }
 
-Widget initialSetup() {
+Widget initialSetup(BuildContext context) {
   return FutureBuilder<MetronomeOptionsNotifier>(
-    future: loadPrefs(),
+    future: loadPrefs(context),
     builder:
         (BuildContext _, AsyncSnapshot<MetronomeOptionsNotifier> snapshot) {
       if (snapshot.hasData) {
@@ -78,16 +81,17 @@ Widget initialSetup() {
 }
 
 /// get metronome options from SharedPreferences
-Future<MetronomeOptionsNotifier> loadPrefs() async {
+Future<MetronomeOptionsNotifier> loadPrefs(BuildContext context) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  Soundpool pool = Soundpool(streamType: StreamType.notification);
+  Soundpool pool = Soundpool(streamType: StreamType.music);
 
   int soundID = await rootBundle
       .load("sounds/mouse_click.aac")
       .then((soundData) => pool.load(soundData));
 
-  bool canVibrate = await Vibration.hasVibrator();
+  bool canVibrate = await Vibration.hasVibrator() &&
+      !kIsWeb; // test on mobile web to see if vibration works
   debugPrint("can vibrate: $canVibrate");
 
   return MetronomeOptionsNotifier(
@@ -105,6 +109,8 @@ Future<MetronomeOptionsNotifier> loadPrefs() async {
       bot: prefs.getInt("timeSignatureBot") ?? 4,
       // TODO: make sure top between 1 - 32 && bot multiple of 2 & between 2 - 16
     ),
+    showEpilepsyWarning: prefs.getBool("showEpilepsyWarning") ?? true,
+    agreedToLegal: prefs.getBool("agreedToLegal") ?? false,
   );
 }
 
