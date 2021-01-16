@@ -165,7 +165,8 @@ class _TempoBoxState extends State<TempoBox>
         margin: EdgeInsets.all(5),
         decoration: BoxDecoration(
           color: Constants.buttonBackgroundColor,
-          border: Border.all(color: Colors.grey[900], width: 1),
+          border: Border.all(
+              color: Colors.grey[900], width: Constants.border_width),
           borderRadius: BorderRadius.all(Radius.circular(Dimens.smol_radius)),
         ),
         child: Container(

@@ -169,7 +169,8 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                   margin: EdgeInsets.all(5),
                   decoration: BoxDecoration(
                     color: Constants.buttonBackgroundColor,
-                    border: Border.all(color: Colors.grey[900], width: 1),
+                    border: Border.all(
+                        color: Colors.grey[900], width: Constants.border_width),
                     borderRadius: BorderRadius.all(
                       Radius.circular(Dimens.smol_radius),
                     ),
@@ -192,7 +193,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       margin: EdgeInsets.only(top: 5, bottom: 5, left: 5),
                       decoration: BoxDecoration(
                         color: Constants.buttonBackgroundColor,
-                        border: Border.all(color: Colors.grey[900], width: 1),
+                        border: Border.all(
+                            color: Colors.grey[900],
+                            width: Constants.border_width),
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(Dimens.smol_radius),
                           bottomLeft: Radius.circular(Dimens.smol_radius),
@@ -222,8 +225,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                             margin: EdgeInsets.only(top: 5, bottom: 5),
                             decoration: BoxDecoration(
                               color: Constants.buttonBackgroundColor,
-                              border:
-                                  Border.all(color: Colors.grey[900], width: 1),
+                              border: Border.all(
+                                  color: Colors.grey[900],
+                                  width: Constants.border_width),
                               // borderRadius: BorderRadius.only(
                               //   topLeft: Radius.circular(Dimens.smol_radius),
                               //   bottomLeft: Radius.circular(Dimens.smol_radius),
@@ -256,7 +260,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       margin: EdgeInsets.only(top: 5, right: 5, bottom: 5),
                       decoration: BoxDecoration(
                         color: Constants.buttonBackgroundColor,
-                        border: Border.all(color: Colors.grey[900], width: 1),
+                        border: Border.all(
+                            color: Colors.grey[900],
+                            width: Constants.border_width),
                         borderRadius: BorderRadius.only(
                           topRight: Radius.circular(Dimens.smol_radius),
                           bottomRight: Radius.circular(Dimens.smol_radius),
@@ -291,7 +297,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                     margin: EdgeInsets.all(5),
                     decoration: BoxDecoration(
                       color: Constants.buttonBackgroundColor,
-                      border: Border.all(color: Colors.grey[900], width: 1),
+                      border: Border.all(
+                          color: Colors.grey[900],
+                          width: Constants.border_width),
                       borderRadius:
                           BorderRadius.all(Radius.circular(Dimens.smol_radius)),
                     ),
@@ -364,7 +372,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       margin: EdgeInsets.all(5),
                       decoration: BoxDecoration(
                         color: Constants.buttonBackgroundColor,
-                        border: Border.all(color: Colors.grey[900], width: 1),
+                        border: Border.all(
+                            color: Colors.grey[900],
+                            width: Constants.border_width),
                         borderRadius: BorderRadius.all(
                             Radius.circular(Dimens.smol_radius)),
                       ),
@@ -401,6 +411,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                                   );
                                 });
                           } else {
+                            if (!obj.playing) {
+                              _beatTracker.indx = 0;
+                            }
                             Provider.of<MetronomeOptionsNotifier>(
                               context1,
                               listen: false,
@@ -420,7 +433,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       margin: EdgeInsets.all(5),
                       decoration: BoxDecoration(
                         color: Constants.buttonBackgroundColor,
-                        border: Border.all(color: Colors.grey[900], width: 1),
+                        border: Border.all(
+                            color: Colors.grey[900],
+                            width: Constants.border_width),
                         borderRadius: BorderRadius.all(
                             Radius.circular(Dimens.smol_radius)),
                       ),
@@ -523,7 +538,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                       margin: EdgeInsets.all(5),
                       decoration: BoxDecoration(
                         color: Constants.buttonBackgroundColor,
-                        border: Border.all(color: Colors.grey[900], width: 1),
+                        border: Border.all(
+                            color: Colors.grey[900],
+                            width: Constants.border_width),
                         borderRadius: BorderRadius.all(
                             Radius.circular(Dimens.smol_radius)),
                       ),

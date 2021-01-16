@@ -16,7 +16,8 @@ class Constants {
 
   static const int animation_duration_ms_full = 200;
   static const int animation_duration_ms_half = 100;
-
+  static const double border_width = 2;
+  static const int border_radius = 2;
   static const buttonBackgroundColor = Colors.white;
 }
 

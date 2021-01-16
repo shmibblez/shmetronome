@@ -58,7 +58,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      home: initialSetup(context),
+      home: SafeArea(
+        bottom: false,
+        child: initialSetup(context),
+      ),
     );
   }
 }
