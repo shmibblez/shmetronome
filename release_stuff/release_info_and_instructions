@@ -1,0 +1,9 @@
+every update need to update version code in:
+- android/local.properties
+- pubspec.yaml
+- TODO: ios?
+
+ANDROID:
+  key store:
+  - path: /Users/shmibbles/dev/shmetronome/release_stuff/shmetronome_keystore.jks
+  - password: highest security password you know
