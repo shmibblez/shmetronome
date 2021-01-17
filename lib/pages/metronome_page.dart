@@ -162,8 +162,9 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
             /// here will go time signature selector, indicator selector (click, vibrate, blink), play/pause, etc...
             TempoBar(controller: _tempoBarController),
 
-            /// tempo indicator
+            /// tempo bpm display
             Expanded(
+              flex: Constants.flex_smol,
               child: Container(
                   alignment: Alignment.center,
                   margin: EdgeInsets.all(5),
@@ -180,11 +181,12 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
             ),
 
             /// empty space for blink viewing
-            Expanded(flex: 2, child: Container()),
+            Expanded(flex: Constants.flex_masv, child: Container()),
 
             /// tempo indicator options (click, vibrate, blink)
             // click option
             Expanded(
+              flex: Constants.flex_smol,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -293,6 +295,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
             Builder(
               builder: (context2) {
                 return Expanded(
+                  flex: Constants.flex_smol,
                   child: Container(
                     margin: EdgeInsets.all(5),
                     decoration: BoxDecoration(
@@ -327,6 +330,8 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
                             //           listen: false)
                             //       .tempoBPM = newTempo.truncate();
                             // },
+                            activeColor: Colors.black,
+                            inactiveColor: Colors.grey[500],
                             min: Constants.minTempo.toDouble(),
                             max: Constants.maxTempo.toDouble(),
                             divisions: 290,
@@ -362,7 +367,7 @@ class _MetronomeScreenState extends State<_MetronomeScreen> {
             /// play/pause, time signature, & tap to tempo options
             /// [play/pause]
             Expanded(
-              flex: 1,
+              flex: Constants.flex_medm,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,

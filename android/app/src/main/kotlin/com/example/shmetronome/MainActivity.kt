@@ -1,4 +1,4 @@
-package com.example.shmetronome
+package com.shmibblez.shmetronome
 
 import io.flutter.embedding.android.FlutterActivity
 

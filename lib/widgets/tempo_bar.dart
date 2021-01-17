@@ -70,7 +70,7 @@ class _TempoBarState extends State<TempoBar> {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      flex: 2,
+      flex: Constants.flex_medm,
       child: Row(
         children: _boxes,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

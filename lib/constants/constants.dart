@@ -19,6 +19,10 @@ class Constants {
   static const double border_width = 2;
   static const int border_radius = 2;
   static const buttonBackgroundColor = Colors.white;
+
+  static const int flex_smol = 2;
+  static const int flex_medm = 3;
+  static const int flex_masv = 4;
 }
 
 class Dimens {

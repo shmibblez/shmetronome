@@ -166,7 +166,7 @@ class TimeSignature {
   int get top => this._top;
   int get bot => this._bot;
   static int get minTops => 1;
-  static int get maxTops => 32;
+  static int get maxTops => 17;
   bool get onFirstTop => this.tops.indexOf(this._top) == 0;
   bool get onLastTop => this.tops.indexOf(this._top) == this.tops.length - 1;
 
